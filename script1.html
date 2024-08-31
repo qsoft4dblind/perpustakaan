@@ -1,0 +1,318 @@
+const container = document.querySelector(".container");
+
+firebase.auth().onAuthStateChanged((user) => {
+    if (user) {
+        Dashboard(user);
+    } else {
+        Landing();
+    }
+});
+
+const Landing = () => {
+    const element = document.createElement("div");
+    element.classList.add("Landing");
+    element.innerHTML = `
+        <div class="inputan">
+            <label for="nama">Nama Lengkap</label>
+            <input type="text" name="nama" id="nama" placeholder="Tulis Nama Lengkap">
+            <label for="alamat">Alamat</label>
+            <input type="text" name="alamat" id="alamat" placeholder="Tulis Alamat">
+            <label for="nomor_telepon">Nomor Telepon</label>
+            <input type="text" name="nomor_telepon" id="nomor_telepon" placeholder="Tulis Nomor Telepon">
+            <label for="email">Email</label>
+            <input type="text" name="email" id="email" placeholder="Tulis Email">
+            <label for="password">Password</label>
+            <input type="password" name="password" id="password" placeholder="Tulis Password">
+        </div>
+        <div class="tombolan">
+            <button data-button="register">Register</button>
+            <button data-button="login">Login</button>
+            <button data-button="forgot">Forgot</button>
+        </div>
+    `;
+
+    container.innerHTML = "";
+    container.appendChild(element);
+
+    const nama = element.querySelector("#nama");
+    const alamat = element.querySelector("#alamat");
+    const nomorTelepon = element.querySelector("#nomor_telepon");
+    const email = element.querySelector("#email");
+    const password = element.querySelector("#password");
+
+    const registerBtn = element.querySelector(`[data-button="register"]`);
+    const loginBtn = element.querySelector(`[data-button="login"]`);
+    const forgotBtn = element.querySelector(`[data-button="forgot"]`);
+
+    registerBtn.addEventListener('click', () => {
+        firebase.auth().createUserWithEmailAndPassword(email.value, password.value)
+            .then((cred) => {
+                const userData = {
+                    nama: nama.value,
+                    alamat: alamat.value,
+                    nomor_telepon: nomorTelepon.value,
+                    email: email.value,
+                    uid: cred.user.uid
+                };
+
+                const userRef = firebase.database().ref('dwitra/perpustakaan/pengguna/' + cred.user.uid);
+                return userRef.set(userData);
+            })
+            .then(() => {
+                alert(`Terimakasih, Anda Berhasil Membuat Akun`);
+            })
+            .catch((error) => {
+                alert("Error: " + error.message);
+            });
+    });
+
+    loginBtn.addEventListener('click', () => {
+        firebase.auth().signInWithEmailAndPassword(email.value, password.value)
+            .then(() => {
+                alert(`Selamat Datang`);
+            })
+            .catch((error) => {
+                alert("Error login: " + error.message);
+            });
+    });
+
+    forgotBtn.addEventListener('click', () => {
+        firebase.auth().sendPasswordResetEmail(email.value)
+            .then(() => {
+                alert(`Password reset email sent to ${email.value}`);
+            })
+            .catch((error) => {
+                alert("Error sending reset email: " + error.message);
+            });
+    });
+}
+
+const Dashboard = (user) => {
+    const userRef = firebase.database().ref('dwitra/perpustakaan/pengguna/' + user.uid);
+
+    userRef.once('value').then((snapshot) => {
+        const userData = snapshot.val();
+
+        const element = document.createElement("div");
+        element.classList.add("Dashboard");
+        element.innerHTML = `
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    margin: 0;
+                    padding: 0;
+                    background-color: #f4f4f4;
+                }
+                .menu {
+                    display: flex;
+                    background-color: #333;
+                    color: white;
+                }
+                .menu-item {
+                    padding: 15px 20px;
+                    cursor: pointer;
+                    position: relative;
+                }
+                .menu-item:hover {
+                    background-color: #575757;
+                }
+                .submenu {
+                    display: none;
+                    position: absolute;
+                    top: 100%;
+                    left: 0;
+                    background-color: #444;
+                    min-width: 200px;
+                    z-index: 1;
+                }
+                .submenu .submenu-item {
+                    padding: 10px;
+                    cursor: pointer;
+                }
+                .submenu .submenu-item:hover {
+                    background-color: #666;
+                }
+                .submenu .submenu-item a {
+                    color: white;
+                    text-decoration: none;
+                }
+                .submenu .submenu-item a:hover {
+                    text-decoration: underline;
+                }
+                .content {
+                    padding: 20px;
+                }
+            </style>
+            <div class="menu">
+                ${(user.email === 'ddsukandar92@gmail.com' || user.email === 'dwitra.qsoft4dblind@gmail.com' || user.email === 'dwitra.training@gmail.com') ? '<button onclick="window.location.href=\'admin pengurus.html\'">Admin Perpustakaan</button>' : ''}                                
+                <div class="menu-item" id="home">Beranda
+                    <div class="submenu" id="home-submenu">
+                        <div class="submenu-item" id="knowledge">Pengetahuan
+                            <div class="submenu" id="knowledge-submenu">
+                                <div class="submenu-item"><a href="umum.html">Pengetahuan Umum</a></div>
+                                <div class="submenu-item"><a href="agama.html">Pengetahuan Agama</a></div>
+                            </div>
+                        </div>
+                        <div class="submenu-item" id="applications">Aplikasi
+                            <div class="submenu" id="applications-submenu">
+                                <div class="submenu-item"><a href="handphone.html">Handphone</a></div>
+                                <div class="submenu-item"><a href="komputer.html">Komputer</a></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="menu-item" id="about">Tentang Kami
+                    <div class="submenu">
+                        <div class="submenu-item"><a href="sosial media.html">Sosial Media</a></div>
+                        <div class="submenu-item"><a href="tasbih.html">Tasbih Digital Dwitra</a></div>
+                    </div>
+                </div>
+                <div class="menu-item" id="comments">Komentar
+                    <div class="submenu">
+                        <div>
+                            <h2>Kirim Pesan</h2>
+                            <form id="messageForm">
+                                <label for="message">Pesan:</label><br>
+                                <textarea id="message" name="message" rows="4" cols="50"></textarea><br><br>
+                                <button type="submit">Kirim</button>
+                            </form>
+                            <h3>Komentar</h3>
+                            <div id="result"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="content">
+                <div>Nama: ${userData.nama}</div>        
+                <div>Email: ${userData.email}</div>
+                <div>UID: ${userData.uid}</div>
+                <button data-button="logout">Logout</button>
+            </div>
+        `;
+
+        container.innerHTML = "";
+        container.appendChild(element);
+
+        const logout = element.querySelector(`[data-button="logout"]`);
+        logout.addEventListener('click', () => {
+            firebase.auth().signOut().then(() => {
+                alert("Terimakasih, Anda Berhasil Logout");
+                Landing();
+            }).catch((err) => alert(err));
+        });
+
+        // Handle form submission and menu interactions
+        document.getElementById('messageForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const message = document.getElementById('message').value;
+            const user = firebase.auth().currentUser;
+
+            if (user) {
+                const userRef = firebase.database().ref('dwitra/perpustakaan/pengguna/' + user.uid);
+                userRef.once('value').then((snapshot) => {
+                    const userData = snapshot.val();
+                    const timestamp = new Date().toLocaleString();
+                    const newMessageRef = firebase.database().ref('dwitra/perpustakaan/orders').push();
+
+                    newMessageRef.set({
+                        waktu_pengiriman: timestamp,
+                        nama_pengguna: userData.nama,
+                        email: userData.email,
+                        pesan: message
+                    }).then(() => {
+                        document.getElementById('messageForm').reset();
+                        loadMessages();
+                    }).catch((error) => {
+                        console.error("Error sending message: ", error);
+                    });
+                });
+            } else {
+                alert("Anda harus login terlebih dahulu!");
+            }
+        });
+
+        function loadMessages() {
+            firebase.database().ref('dwitra/perpustakaan/orders').once('value', (snapshot) => {
+                const resultDiv = document.getElementById('result');
+                resultDiv.innerHTML = '';
+
+                let count = 1;
+                snapshot.forEach((childSnapshot) => {
+                    const messageData = childSnapshot.val();
+                    const messageKey = childSnapshot.key;
+
+                    const messageHTML = `
+                        <div>
+                            <p><strong>Nomor:</strong> ${count}</p>
+                            <p><strong>Waktu:</strong> ${messageData.waktu_pengiriman}</p>
+                            <p><strong>Nama Pengguna:</strong> ${messageData.nama_pengguna}</p>
+                            <p><strong>Email:</strong> ${messageData.email}</p>
+                            <p><strong>Pesan:</strong> ${messageData.pesan}</p>
+                            <button onclick="deleteMessage('${messageKey}', '${messageData.email}')">Hapus</button>
+                        </div>
+                    `;
+                    resultDiv.innerHTML += messageHTML;
+                    count++;
+                });
+            });
+        }
+
+        // Fungsi untuk menghapus pesan dengan konfirmasi
+        window.deleteMessage = function(messageKey, email) {
+            const user = firebase.auth().currentUser;
+            if (user && user.email === email) {
+                if (confirm("Apakah Anda ingin menghapus pesan ini?")) {
+                    firebase.database().ref('dwitra/perpustakaan/orders').child(messageKey).remove()
+                        .then(() => {
+                            alert("Pesan berhasil dihapus!");
+                            loadMessages(); // Refresh messages after deletion
+                        })
+                        .catch((error) => {
+                            console.error("Error deleting message:", error);
+                        });
+                }
+            } else {
+                alert("Anda tidak memiliki izin untuk menghapus pesan ini.");
+            }
+        };
+
+        loadMessages();  // Memuat pesan saat halaman dimuat
+
+        // Handle menu interactions
+        document.querySelectorAll('.menu-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const submenu = item.querySelector('.submenu');
+                if (submenu) {
+                    submenu.style.display = submenu.style.display === 'block' ? 'none' : 'block';
+                }
+                // Close other submenus
+                document.querySelectorAll('.submenu').forEach(sub => {
+                    if (sub !== submenu) {
+                        sub.style.display = 'none';
+                    }
+                });
+            });
+        });
+
+        document.querySelectorAll('.submenu-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent click event from propagating to parent menu-item
+            });
+        });
+
+        // Handle specific submenus for "Pengetahuan" and "Aplikasi"
+        document.getElementById('knowledge').addEventListener('click', () => {
+            const knowledgeSubmenu = document.getElementById('knowledge-submenu');
+            knowledgeSubmenu.style.display = knowledgeSubmenu.style.display === 'block' ? 'none' : 'block';
+        });
+
+        document.getElementById('applications').addEventListener('click', () => {
+            const applicationsSubmenu = document.getElementById('applications-submenu');
+            applicationsSubmenu.style.display = applicationsSubmenu.style.display === 'block' ? 'none' : 'block';
+        });
+    }).catch((error) => {
+        console.error("Error retrieving user data:", error);
+        alert("Gagal mengambil data pengguna: " + error.message);
+    });
+};

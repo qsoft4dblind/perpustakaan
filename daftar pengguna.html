@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daftar Pengguna</title>
+    <style>
+        .pengguna-container {
+            width: 100%;
+            margin: 20px 0;
+            border: 1px solid black;
+            padding: 10px;
+            background-color: #f9f9f9;
+        }
+
+        .pengguna-container:not(:last-child) {
+            margin-bottom: 10px;
+        }
+
+        .pengguna-detail {
+            margin-bottom: 5px;
+        }
+
+        .hapusBtn {
+            background-color: #f44336;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+
+        .hapusBtn:hover {
+            background-color: #d32f2f;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Daftar Pengguna</h1>
+
+<button id="hapusSemuaBtn">Hapus Semua Data</button>
+<button class="back-button" onclick="window.location.href='admin pengurus.html'">Kembali</button>
+
+<div id="penggunaList">
+    <!-- Data akan dimasukkan di sini -->
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+<script src="script.js"></script>    
+
+<script>
+    // Referensi ke Firebase Realtime Database
+    const penggunaRef = firebase.database().ref('dwitra/perpustakaan/pengguna');
+
+    // Fungsi untuk menampilkan semua data pengguna
+    penggunaRef.once('value', (snapshot) => {
+        const penggunaList = document.querySelector("#penggunaList");
+
+        let counter = 1; // Inisialisasi nomor urut
+
+        snapshot.forEach((childSnapshot) => {
+            const userData = childSnapshot.val();
+            const userId = childSnapshot.key;
+
+            // Buat container untuk setiap pengguna
+            const penggunaContainer = document.createElement("div");
+            penggunaContainer.className = "pengguna-container";
+
+            penggunaContainer.innerHTML = `
+                <p class="pengguna-detail"><strong>No:</strong> ${counter}</p>
+                <p class="pengguna-detail"><strong>Nama:</strong> ${userData.nama}</p>
+                <p class="pengguna-detail"><strong>Alamat:</strong> ${userData.alamat}</p>
+                <p class="pengguna-detail"><strong>Nomor Telepon:</strong> ${userData.nomor_telepon}</p>
+                <p class="pengguna-detail"><strong>Email:</strong> ${userData.email}</p>
+                <button data-id="${userId}" class="hapusBtn">Hapus</button>
+            `;
+
+            penggunaList.appendChild(penggunaContainer);
+
+            counter++; // Increment nomor urut
+        });
+
+        // Tambahkan event listener pada setiap tombol hapus
+        document.querySelectorAll(".hapusBtn").forEach(button => {
+            button.addEventListener('click', (event) => {
+                const userId = event.target.getAttribute("data-id");
+
+                // Konfirmasi sebelum menghapus
+                const konfirmasi = confirm("Apakah Anda yakin ingin menghapus pengguna ini?");
+                if (konfirmasi) {
+                    // Hapus data pengguna dari Firebase
+                    firebase.database().ref('dwitra/perpustakaan/pengguna/' + userId).remove()
+                        .then(() => {
+                            alert("Pengguna berhasil dihapus.");
+                            location.reload(); // Reload halaman setelah menghapus data
+                        })
+                        .catch((error) => {
+                            alert("Gagal menghapus data: " + error.message);
+                        });
+                }
+            });
+        });
+    });
+
+    // Fungsi untuk menghapus semua data
+    document.getElementById('hapusSemuaBtn').addEventListener('click', () => {
+        const konfirmasi = confirm("Apakah Anda yakin ingin menghapus semua data?");
+        if (konfirmasi) {
+            penggunaRef.remove()
+                .then(() => {
+                    alert("Semua data berhasil dihapus.");
+                    location.reload(); // Reload halaman setelah menghapus semua data
+                })
+                .catch((error) => {
+                    alert("Gagal menghapus semua data: " + error.message);
+                });
+        }
+    });
+</script>
+
+</body>
+</html>

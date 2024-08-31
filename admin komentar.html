@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Form Pesan Firebase</title>
+</head>
+<body>
+    <h2>Kirim Pesan</h2>
+    <form id="messageForm">
+        <label for="message">Pesan:</label><br>
+        <textarea id="message" name="message" rows="4" cols="50"></textarea><br><br>
+        <button type="submit">Kirim</button>
+    </form>
+
+    <button id="deleteAllMessages">Hapus Semua Pesan</button>
+    <button class="back-button" onclick="window.location.href='admin pengurus.html'">Kembali</button>
+
+    <h3>Hasil Pengiriman</h3>
+    <div id="result"></div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script>
+        // Inisialisasi Firebase
+        var firebaseConfig = {
+            apiKey: "AIzaSyBHQttVBBpArmxwFfsQQBEo2h8sAS8QJTg",
+            authDomain: "ujicoba-57e01.firebaseapp.com",
+            databaseURL: "https://ujicoba-57e01-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "ujicoba-57e01",
+            storageBucket: "ujicoba-57e01.appspot.com",
+            messagingSenderId: "390309020729",
+            appId: "1:390309020729:web:f825e7e683c4425719f9e8",
+            measurementId: "G-BXK32K4QC7"
+        };
+        firebase.initializeApp(firebaseConfig);
+
+        // Mendapatkan referensi ke database
+        var dbRef = firebase.database().ref('dwitra/perpustakaan');
+        
+        // Mengambil nama pengguna dan email
+        function getUserData(uid) {
+            return dbRef.child('pengguna').child(uid).once('value').then(function(snapshot) {
+                return snapshot.val();
+            });
+        }
+
+        // Mengirim pesan ke orders dengan waktu, nama pengguna, email, dan pesan
+        document.getElementById('messageForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            var message = document.getElementById('message').value;
+            var user = firebase.auth().currentUser;
+
+            if (user) {
+                getUserData(user.uid).then(function(userData) {
+                    var userName = userData.nama;
+                    var userEmail = userData.email;
+                    var timestamp = new Date().toLocaleString();
+                    var newMessageRef = dbRef.child('orders').push();
+
+                    newMessageRef.set({
+                        waktu_pengiriman: timestamp,
+                        nama_pengguna: userName,
+                        email: userEmail,
+                        pesan: message
+                    });
+
+                    document.getElementById('messageForm').reset();
+                    loadMessages();
+                });
+            } else {
+                alert("Anda harus login terlebih dahulu!");
+            }
+        });
+
+        // Fungsi untuk memuat dan menampilkan pesan
+        function loadMessages() {
+            dbRef.child('orders').on('value', function(snapshot) {
+                var resultDiv = document.getElementById('result');
+                resultDiv.innerHTML = '';
+                snapshot.forEach(function(childSnapshot) {
+                    var messageData = childSnapshot.val();
+                    var messageKey = childSnapshot.key;
+
+                    var messageHTML = `
+                        <div>
+                            <p><strong>Waktu:</strong> ${messageData.waktu_pengiriman}</p>
+                            <p><strong>Nama Pengguna:</strong> ${messageData.nama_pengguna}</p>
+                            <p><strong>Email:</strong> ${messageData.email}</p>
+                            <p><strong>Pesan:</strong> ${messageData.pesan}</p>
+                            <button onclick="deleteMessage('${messageKey}', '${messageData.email}')">Hapus</button>
+                        </div>
+                    `;
+                    resultDiv.innerHTML += messageHTML;
+                });
+            });
+        }
+
+        // Fungsi untuk menghapus pesan dengan konfirmasi
+        function deleteMessage(messageKey, email) {
+            var user = firebase.auth().currentUser;
+            if (user && user.email === email) {
+                if (confirm("Apakah Anda ingin menghapus pesan ini?")) {
+                    dbRef.child('orders').child(messageKey).remove()
+                        .then(function() {
+                            alert("Pesan berhasil dihapus!");
+                        })
+                        .catch(function(error) {
+                            console.error("Error deleting message:", error);
+                        });
+                }
+            } else {
+                alert("Anda tidak memiliki izin untuk menghapus pesan ini.");
+            }
+        }
+
+        // Fungsi untuk menghapus semua pesan dengan konfirmasi
+        function deleteAllMessages() {
+            if (confirm("Apakah Anda ingin menghapus semua pesan?")) {
+                dbRef.child('orders').remove()
+                    .then(function() {
+                        alert("Semua pesan berhasil dihapus!");
+                    })
+                    .catch(function(error) {
+                        console.error("Error deleting all messages:", error);
+                    });
+            }
+        }
+
+        // Menambahkan event listener untuk tombol hapus semua pesan
+        document.getElementById('deleteAllMessages').addEventListener('click', deleteAllMessages);
+
+        // Mock login untuk testing
+        firebase.auth().signInAnonymously().catch(function(error) {
+            console.error(error.message);
+        });
+
+        loadMessages();  // Memuat pesan saat halaman dimuat
+    </script>
+</body>
+</html>
